@@ -65,15 +65,16 @@ func capture(label: StringName) -> void:
 
 
 func _capture_deferred(label: StringName) -> void:
-	# Wait one more frame so the viewport has actually rendered
-	await get_tree().process_frame
+	# Wait several frames so the viewport has actually rendered
+	for i: int in range(3):
+		await get_tree().process_frame
 	capture(label)
 
 
 func _on_state_changed(state: int) -> void:
 	match state:
 		GameEngine.State.COMPLETE:
-			capture(&"complete")
+			_capture_deferred.call_deferred(&"complete")
 
 
 func _on_note_cleared(_pitch: int) -> void:
