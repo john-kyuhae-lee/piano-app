@@ -77,11 +77,36 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# ESC returns to song list from game
-	if _in_game and event is InputEventKey:
-		var key: InputEventKey = event as InputEventKey
-		if key.pressed and key.keycode == KEY_ESCAPE:
+	if not _in_game or not event is InputEventKey:
+		return
+
+	var key: InputEventKey = event as InputEventKey
+	if not key.pressed:
+		return
+
+	match key.keycode:
+		KEY_ESCAPE:
 			_show_song_list()
+		KEY_1:
+			if _game_engine.state == GameEngine.State.READY:
+				_game_engine.play_mode = GameEngine.PlayMode.LEARN
+				_update_state_label(GameEngine.State.READY)
+		KEY_2:
+			if _game_engine.state == GameEngine.State.READY:
+				_game_engine.play_mode = GameEngine.PlayMode.PLAY
+				_update_state_label(GameEngine.State.READY)
+		KEY_3:
+			if _game_engine.state == GameEngine.State.READY:
+				_game_engine.play_mode = GameEngine.PlayMode.PERFORM
+				_update_state_label(GameEngine.State.READY)
+		KEY_EQUAL:  # + key
+			if _game_engine.state == GameEngine.State.READY:
+				_game_engine.set_speed(_game_engine._speed_multiplier + 0.1)
+				_update_state_label(GameEngine.State.READY)
+		KEY_MINUS:
+			if _game_engine.state == GameEngine.State.READY:
+				_game_engine.set_speed(_game_engine._speed_multiplier - 0.1)
+				_update_state_label(GameEngine.State.READY)
 
 
 func _show_song_list() -> void:
@@ -173,9 +198,16 @@ func _on_game_state_changed(state: int) -> void:
 
 
 func _update_state_label(state: GameEngine.State) -> void:
+	var mode_name: String = ["Learn", "Play", "Perform"][_game_engine.play_mode]
 	match state:
 		GameEngine.State.READY:
-			_state_label.text = "Press any key to start"
+			var speed_pct: int = int(_game_engine._speed_multiplier * 100)
+			_state_label.text = (
+				"[%s Mode] Press any key to start\n\n"
+				% mode_name
+				+ "1=Learn  2=Play  3=Perform\n"
+				+ "Speed: %d%%  (+/- to adjust)" % speed_pct
+			)
 			_state_label.add_theme_color_override(&"font_color", Color(1.0, 1.0, 1.0, 0.7))
 		GameEngine.State.PLAYING:
 			_state_label.text = ""
@@ -183,18 +215,24 @@ func _update_state_label(state: GameEngine.State) -> void:
 		GameEngine.State.COMPLETE:
 			_state_label.visible = true
 			_state_label.add_theme_color_override(&"font_color", Color(0.4, 0.95, 0.5, 0.95))
+			var stars: int = _game_engine.get_stars()
+			var star_str: String = "★".repeat(stars) + "☆".repeat(3 - stars)
+			var accuracy_pct: int = int(_game_engine.accuracy * 100)
+			var result: String = "Song Complete!  %s\n\n" % star_str
+			result += "Accuracy: %d%%  |  Streak: %d  |  Correct: %d  Wrong: %d\n" % [
+				accuracy_pct, _game_engine.best_streak,
+				_game_engine.correct_count, _game_engine.wrong_count + _game_engine.miss_count,
+			]
+
 			if _current_song_id != "":
 				var recs: Array[Dictionary] = SongSearch.get_recommendations(_current_song_id, 3)
 				if recs.size() > 0:
-					var rec_text: String = "Song Complete!\n\nTry these next:\n"
+					result += "\nTry these next:\n"
 					for r: Dictionary in recs:
-						rec_text += "  • " + (r.get("title", "") as String) + "\n"
-					rec_text += "\nESC for song list"
-					_state_label.text = rec_text
-				else:
-					_state_label.text = "Song Complete! (ESC for song list)"
-			else:
-				_state_label.text = "Song Complete! (ESC for song list)"
+						result += "  • " + (r.get("title", "") as String) + "\n"
+
+			result += "\nESC for song list  |  Any key to replay"
+			_state_label.text = result
 
 
 func _on_song_completed() -> void:
