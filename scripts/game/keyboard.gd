@@ -11,6 +11,12 @@ const WHITE_KEY_OUTLINE := Color(0.3, 0.3, 0.3)
 const BLACK_KEY_COLOR := Color(0.12, 0.12, 0.12)
 const BLACK_KEY_OUTLINE := Color(0.0, 0.0, 0.0)
 
+## Highlight colors for pressed keys (right hand = green, left hand = blue).
+const HIGHLIGHT_RIGHT := Color(0.2, 0.85, 0.4)
+const HIGHLIGHT_LEFT := Color(0.3, 0.5, 0.95)
+## Middle C — boundary between left and right hand coloring.
+const MIDDLE_C: int = 60
+
 ## Height of the keyboard area in pixels.
 const KEYBOARD_HEIGHT: float = 160.0
 ## Black keys are this fraction of white key height.
@@ -22,11 +28,14 @@ var _viewport_size: Vector2
 var _white_key_width: float
 var _white_key_positions: Array[float] = []  # x position of each white key
 var _key_rects: Dictionary = {}  # midi_pitch -> Rect2
+var _pressed_keys: Dictionary = {}  # midi_pitch -> true
 
 
 func _ready() -> void:
 	_viewport_size = get_viewport_rect().size
 	_calculate_layout()
+	Events.midi_note_on.connect(_on_midi_note_on)
+	Events.midi_note_off.connect(_on_midi_note_off)
 
 
 func _draw() -> void:
@@ -34,14 +43,16 @@ func _draw() -> void:
 	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
 		if not _is_black_key(midi):
 			var rect: Rect2 = _key_rects[midi]
-			draw_rect(rect, WHITE_KEY_COLOR)
+			var color: Color = _get_key_color(midi, false)
+			draw_rect(rect, color)
 			draw_rect(rect, WHITE_KEY_OUTLINE, false, 1.0)
 
 	# Draw black keys on top
 	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
 		if _is_black_key(midi):
 			var rect: Rect2 = _key_rects[midi]
-			draw_rect(rect, BLACK_KEY_COLOR)
+			var color: Color = _get_key_color(midi, true)
+			draw_rect(rect, color)
 			draw_rect(rect, BLACK_KEY_OUTLINE, false, 1.0)
 
 
@@ -91,6 +102,22 @@ func _calculate_layout() -> void:
 					black_w,
 					black_h,
 				)
+
+
+func _get_key_color(midi: int, is_black: bool) -> Color:
+	if _pressed_keys.has(midi):
+		return HIGHLIGHT_RIGHT if midi >= MIDDLE_C else HIGHLIGHT_LEFT
+	return BLACK_KEY_COLOR if is_black else WHITE_KEY_COLOR
+
+
+func _on_midi_note_on(pitch: int, _velocity: int) -> void:
+	_pressed_keys[pitch] = true
+	queue_redraw()
+
+
+func _on_midi_note_off(pitch: int) -> void:
+	_pressed_keys.erase(pitch)
+	queue_redraw()
 
 
 static func _is_black_key(midi_pitch: int) -> bool:
