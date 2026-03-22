@@ -1,22 +1,20 @@
 # Current Milestone
 
-## Active: M3 — First Playable
+## Active: M4 — Debug Observability
 
-**Status**: Complete — needs playtesting with Yamaha P-125
+**Status**: Complete
 
-**Goal**: Falling blocks + MIDI input + wait mode. The kid plays along at their own pace — blocks pause at the hit line until the correct key is pressed.
+**Goal**: Automated testing loop — AI agent can launch game, play it via ydotool, and observe results through structured telemetry + viewport screenshots.
 
 **Done**:
-- M1 complete (rendering proof)
-- M2 complete (MIDI input verified with Yamaha P-125)
-- Game signals on Events bus (note_cleared, wrong_note_played, song_completed, game_state_changed)
-- GameEngine with wait mode, state machine (Ready → Playing → Complete), hit detection
-- NoteRenderer refactored — driven by GameEngine, visual feedback (white flash on clear, red flash on wrong)
-- Main scene wiring — state labels ("Press any key to start", "Song Complete!")
-- Song: Twinkle Twinkle Little Star, right hand only, 100 BPM
+- DebugTelemetry autoload — JSONL event logger (frame, song_time, state, FPS, input events)
+- DebugCapture autoload — viewport screenshots on state transitions (Ready, Playing, first clear, Complete)
+- Keyboard-to-MIDI mapping in MidiManager (Z=C4, X=D4, etc.)
+- playtest.sh test harness — launches game, plays Twinkle via ydotool, collects results
+- Verified: 14/14 notes cleared, 0 wrong notes, avg 57.8 FPS
+- Roadmap renumbered (M4=observability, M5-M9 shifted)
 
 **Blockers**: None
 
 **Next**:
-- Playtest with Yamaha P-125 — verify feel, latency, correctness
-- Begin M4 spec (Song Pipeline & Fingering)
+- Begin M5 spec (Song Pipeline & Fingering)
