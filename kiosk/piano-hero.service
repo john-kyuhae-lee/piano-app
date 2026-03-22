@@ -1,0 +1,13 @@
+[Unit]
+Description=Piano Hero Kiosk
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/piano-app/kiosk/piano-hero.sh
+Restart=on-failure
+RestartSec=2
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=default.target
