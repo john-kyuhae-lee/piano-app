@@ -4,12 +4,11 @@ extends Node2D
 
 const FIRST_MIDI: int = 21  # A0
 const LAST_MIDI: int = 108  # C8
-const TOTAL_KEYS: int = 88
 
 const WHITE_KEY_COLOR := Color(0.92, 0.92, 0.92)
-const WHITE_KEY_OUTLINE := Color(0.3, 0.3, 0.3)
+const WHITE_KEY_BORDER := Color(0.45, 0.45, 0.45)
 const BLACK_KEY_COLOR := Color(0.12, 0.12, 0.12)
-const BLACK_KEY_OUTLINE := Color(0.0, 0.0, 0.0)
+const BLACK_KEY_BORDER := Color(0.0, 0.0, 0.0)
 
 ## Highlight colors for pressed keys (right hand = green, left hand = blue).
 const HIGHLIGHT_RIGHT := Color(0.2, 0.85, 0.4)
@@ -22,13 +21,28 @@ const KEYBOARD_HEIGHT: float = 160.0
 ## Black keys are this fraction of white key height.
 const BLACK_KEY_HEIGHT_RATIO: float = 0.62
 ## Black keys are this fraction of white key width.
-const BLACK_KEY_WIDTH_RATIO: float = 0.58
+const BLACK_KEY_WIDTH_RATIO: float = 0.6
+## Border width for key outlines.
+const BORDER_WIDTH: float = 2.0
+
+## Black key offsets within an octave (relative to left edge of C).
+## Real pianos have unevenly spaced black keys. These offsets are fractions
+## of a white key width, measured from the left edge of C in that octave.
+## note_in_octave -> offset from octave start (in white key widths)
+const BLACK_KEY_OFFSETS: Dictionary = {
+	1: 0.95,   # C# — between C(0) and D(1), slightly left
+	3: 2.05,   # D# — between D(1) and E(2), slightly right
+	6: 3.93,   # F# — between F(3) and G(4), slightly left
+	8: 4.97,   # G# — between G(4) and A(5), centered
+	10: 5.95,  # A# — between A(5) and B(6), slightly left
+}
 
 var _viewport_size: Vector2
 var _white_key_width: float
-var _white_key_positions: Array[float] = []  # x position of each white key
 var _key_rects: Dictionary = {}  # midi_pitch -> Rect2
 var _pressed_keys: Dictionary = {}  # midi_pitch -> true
+## Maps each white key midi pitch to its sequential index (0-based).
+var _white_key_indices: Dictionary = {}  # midi_pitch -> int
 
 
 func _ready() -> void:
@@ -39,21 +53,47 @@ func _ready() -> void:
 
 
 func _draw() -> void:
+	var keyboard_top: float = _viewport_size.y - KEYBOARD_HEIGHT
+
 	# Draw white keys first
 	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
-		if not _is_black_key(midi):
-			var rect: Rect2 = _key_rects[midi]
-			var color: Color = _get_key_color(midi, false)
-			draw_rect(rect, color)
-			draw_rect(rect, WHITE_KEY_OUTLINE, false, 1.0)
+		if _is_black_key(midi):
+			continue
+		var rect: Rect2 = _key_rects[midi]
+		var fill: Color = _get_key_color(midi, false)
+		draw_rect(rect, fill)
+
+	# Draw dividing lines between white keys
+	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
+		if _is_black_key(midi):
+			continue
+		var rect: Rect2 = _key_rects[midi]
+		# Right edge divider
+		draw_line(
+			Vector2(rect.position.x + rect.size.x, keyboard_top),
+			Vector2(rect.position.x + rect.size.x, keyboard_top + KEYBOARD_HEIGHT),
+			WHITE_KEY_BORDER,
+			BORDER_WIDTH,
+		)
+
+	# Top edge of keyboard
+	draw_line(
+		Vector2(0.0, keyboard_top),
+		Vector2(_viewport_size.x, keyboard_top),
+		WHITE_KEY_BORDER,
+		BORDER_WIDTH,
+	)
 
 	# Draw black keys on top
 	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
-		if _is_black_key(midi):
-			var rect: Rect2 = _key_rects[midi]
-			var color: Color = _get_key_color(midi, true)
-			draw_rect(rect, color)
-			draw_rect(rect, BLACK_KEY_OUTLINE, false, 1.0)
+		if not _is_black_key(midi):
+			continue
+		if not _key_rects.has(midi):
+			continue
+		var rect: Rect2 = _key_rects[midi]
+		var fill: Color = _get_key_color(midi, true)
+		draw_rect(rect, fill)
+		draw_rect(rect, BLACK_KEY_BORDER, false, BORDER_WIDTH)
 
 
 func get_key_rect(midi_pitch: int) -> Rect2:
@@ -67,41 +107,69 @@ func get_top_y() -> float:
 
 
 func _calculate_layout() -> void:
-	# Count white keys
-	var white_count: int = 0
-	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
-		if not _is_black_key(midi):
-			white_count += 1
-
-	_white_key_width = _viewport_size.x / float(white_count)
 	var keyboard_top: float = _viewport_size.y - KEYBOARD_HEIGHT
 
-	# Position white keys
+	# Count and index white keys
 	var white_index: int = 0
 	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
 		if not _is_black_key(midi):
-			var x: float = white_index * _white_key_width
-			_key_rects[midi] = Rect2(x, keyboard_top, _white_key_width, KEYBOARD_HEIGHT)
-			_white_key_positions.append(x)
+			_white_key_indices[midi] = white_index
 			white_index += 1
+	var white_count: int = white_index
 
-	# Position black keys — centered between their neighboring white keys
+	_white_key_width = _viewport_size.x / float(white_count)
+
+	# Position white keys
 	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
-		if _is_black_key(midi):
-			var left_white: int = midi - 1
-			var right_white: int = midi + 1
-			if _key_rects.has(left_white) and _key_rects.has(right_white):
-				var left_rect: Rect2 = _key_rects[left_white]
-				var right_rect: Rect2 = _key_rects[right_white]
-				var black_w: float = _white_key_width * BLACK_KEY_WIDTH_RATIO
-				var center_x: float = (left_rect.position.x + left_rect.size.x + right_rect.position.x) / 2.0
-				var black_h: float = KEYBOARD_HEIGHT * BLACK_KEY_HEIGHT_RATIO
-				_key_rects[midi] = Rect2(
-					center_x - black_w / 2.0,
-					keyboard_top,
-					black_w,
-					black_h,
-				)
+		if not _is_black_key(midi):
+			var idx: int = _white_key_indices[midi] as int
+			var x: float = idx * _white_key_width
+			_key_rects[midi] = Rect2(x, keyboard_top, _white_key_width, KEYBOARD_HEIGHT)
+
+	# Position black keys using real piano offsets
+	for midi: int in range(FIRST_MIDI, LAST_MIDI + 1):
+		if not _is_black_key(midi):
+			continue
+		var note_in_octave: int = midi % 12
+		if not BLACK_KEY_OFFSETS.has(note_in_octave):
+			continue
+
+		# Find the C of this octave
+		var octave_c: int = midi - note_in_octave
+		# Find the white key index of that C (or the first white key in range)
+		var ref_midi: int = octave_c
+		if ref_midi < FIRST_MIDI:
+			# For A0/B0 octave, offset from A0 instead
+			continue
+		if not _white_key_indices.has(ref_midi):
+			continue
+
+		var c_white_index: int = _white_key_indices[ref_midi] as int
+		var offset: float = BLACK_KEY_OFFSETS[note_in_octave] as float
+		var black_w: float = _white_key_width * BLACK_KEY_WIDTH_RATIO
+		var black_h: float = KEYBOARD_HEIGHT * BLACK_KEY_HEIGHT_RATIO
+		var center_x: float = (c_white_index as float + offset) * _white_key_width
+
+		_key_rects[midi] = Rect2(
+			center_x - black_w / 2.0,
+			keyboard_top,
+			black_w,
+			black_h,
+		)
+
+	# Handle A#0 (MIDI 22) — the one black key whose C (C0=12) is below our range
+	if not _key_rects.has(22) and _white_key_indices.has(21):
+		# A0 is white index 0, B0 is white index 1. A#0 sits between them.
+		var black_w: float = _white_key_width * BLACK_KEY_WIDTH_RATIO
+		var black_h: float = KEYBOARD_HEIGHT * BLACK_KEY_HEIGHT_RATIO
+		var a0_idx: int = _white_key_indices[21] as int
+		var center_x: float = (a0_idx as float + 0.95) * _white_key_width
+		_key_rects[22] = Rect2(
+			center_x - black_w / 2.0,
+			keyboard_top,
+			black_w,
+			black_h,
+		)
 
 
 func _get_key_color(midi: int, is_black: bool) -> Color:
@@ -122,5 +190,4 @@ func _on_midi_note_off(pitch: int) -> void:
 
 static func _is_black_key(midi_pitch: int) -> bool:
 	var note: int = midi_pitch % 12
-	# C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
 	return note in [1, 3, 6, 8, 10]

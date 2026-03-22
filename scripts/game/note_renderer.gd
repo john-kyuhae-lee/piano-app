@@ -1,67 +1,63 @@
 class_name NoteRenderer
 extends Node2D
 ## Draws all falling note blocks using a single _draw() call.
+## Driven by GameEngine — reads song_time, song data, and cleared notes from it.
 
 const RIGHT_HAND: int = 0
 const LEFT_HAND: int = 1
 
 const RIGHT_HAND_COLOR := Color(0.2, 0.75, 0.35, 0.85)
 const LEFT_HAND_COLOR := Color(0.25, 0.45, 0.85, 0.85)
+const CLEARED_FLASH_COLOR := Color(1.0, 1.0, 1.0, 0.9)
+const WRONG_FLASH_COLOR := Color(0.9, 0.15, 0.15, 0.9)
 const HIT_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.5)
 const HIT_LINE_HEIGHT: float = 3.0
 
 ## Pixels per second of song time — controls how fast notes scroll.
 const PIXELS_PER_SECOND: float = 400.0
-## BPM for the hardcoded song.
-const BPM: float = 120.0
-## Seconds per beat.
-const SECONDS_PER_BEAT: float = 60.0 / BPM
 ## How far above the viewport to pre-draw notes.
 const OVERDRAW_MARGIN: float = 200.0
+## How long visual feedback lasts (seconds).
+const FLASH_DURATION: float = 0.25
+## Gap in pixels between consecutive notes so same-pitch notes are visually distinct.
+const NOTE_GAP: float = 4.0
 
-## Note format: [midi_pitch, start_beat, duration_beats, hand]
-var _song_notes: Array = [
-	# Right hand — C major ascending
-	[60, 0.0, 1.0, RIGHT_HAND],
-	[62, 1.0, 1.0, RIGHT_HAND],
-	[64, 2.0, 1.0, RIGHT_HAND],
-	[65, 3.0, 1.0, RIGHT_HAND],
-	[67, 4.0, 1.0, RIGHT_HAND],
-	[69, 5.0, 1.0, RIGHT_HAND],
-	[71, 6.0, 1.0, RIGHT_HAND],
-	[72, 7.0, 1.0, RIGHT_HAND],
-	# Left hand — C major descending
-	[48, 0.0, 1.0, LEFT_HAND],
-	[47, 1.0, 1.0, LEFT_HAND],
-	[45, 2.0, 1.0, LEFT_HAND],
-	[43, 3.0, 1.0, LEFT_HAND],
-	[41, 4.0, 1.0, LEFT_HAND],
-	[40, 5.0, 1.0, LEFT_HAND],
-	[38, 6.0, 1.0, LEFT_HAND],
-	[36, 7.0, 1.0, LEFT_HAND],
-]
-
-var _song_time: float = 0.0
-var _song_duration_seconds: float
 var _hit_line_y: float
 var _keyboard: PianoKeyboard
+var _game_engine: GameEngine
+
+## Flash state for cleared notes: note_index -> time_remaining
+var _clear_flashes: Dictionary = {}
+## Flash state for wrong notes: time remaining
+var _wrong_flash_timer: float = 0.0
 
 
-func setup(keyboard: PianoKeyboard) -> void:
+func setup(keyboard: PianoKeyboard, game_engine: GameEngine) -> void:
 	_keyboard = keyboard
+	_game_engine = game_engine
 	_hit_line_y = keyboard.get_top_y() - 10.0
-	_song_duration_seconds = 8.0 * SECONDS_PER_BEAT + 1.0  # 8 beats + 1s gap
+	Events.note_cleared.connect(_on_note_cleared)
+	Events.wrong_note_played.connect(_on_wrong_note)
 
 
 func _process(delta: float) -> void:
-	_song_time += delta
-	if _song_time >= _song_duration_seconds:
-		_song_time = 0.0
+	# Tick down flash timers
+	var to_remove: Array[int] = []
+	for note_index: int in _clear_flashes:
+		_clear_flashes[note_index] -= delta
+		if _clear_flashes[note_index] as float <= 0.0:
+			to_remove.append(note_index)
+	for idx: int in to_remove:
+		_clear_flashes.erase(idx)
+
+	if _wrong_flash_timer > 0.0:
+		_wrong_flash_timer -= delta
+
 	queue_redraw()
 
 
 func _draw() -> void:
-	if _keyboard == null:
+	if _keyboard == null or _game_engine == null:
 		return
 
 	# Draw hit line
@@ -71,19 +67,27 @@ func _draw() -> void:
 		HIT_LINE_COLOR,
 	)
 
-	# Draw notes
-	for note: Array in _song_notes:
+	var song_notes: Array[Array] = _game_engine.get_song_notes()
+	var spb: float = _game_engine.get_seconds_per_beat()
+	var current_time: float = _game_engine.song_time
+
+	for i: int in range(song_notes.size()):
+		# Skip fully cleared notes (unless still flashing)
+		if _game_engine.cleared_notes.has(i) and not _clear_flashes.has(i):
+			continue
+
+		var note: Array = song_notes[i]
 		var midi_pitch: int = note[0] as int
 		var start_beat: float = note[1] as float
 		var duration_beats: float = note[2] as float
 		var hand: int = note[3] as int
 
-		var start_time: float = start_beat * SECONDS_PER_BEAT
-		var duration_time: float = duration_beats * SECONDS_PER_BEAT
+		var start_time: float = start_beat * spb
+		var duration_time: float = duration_beats * spb
 
 		# Note bottom edge Y = hit_line_y when note_time == song_time
-		var note_bottom_y: float = _hit_line_y - (start_time - _song_time) * PIXELS_PER_SECOND
-		var note_height: float = duration_time * PIXELS_PER_SECOND
+		var note_bottom_y: float = _hit_line_y - (start_time - current_time) * PIXELS_PER_SECOND
+		var note_height: float = duration_time * PIXELS_PER_SECOND - NOTE_GAP
 		var note_top_y: float = note_bottom_y - note_height
 
 		# Cull notes that are fully off-screen
@@ -95,7 +99,15 @@ func _draw() -> void:
 		if key_rect.size.x == 0.0:
 			continue
 
-		var color: Color = RIGHT_HAND_COLOR if hand == RIGHT_HAND else LEFT_HAND_COLOR
+		# Determine color
+		var color: Color
+		if _clear_flashes.has(i):
+			color = CLEARED_FLASH_COLOR
+		elif _wrong_flash_timer > 0.0 and _is_at_hit_line(start_time, current_time):
+			color = WRONG_FLASH_COLOR
+		else:
+			color = RIGHT_HAND_COLOR if hand == RIGHT_HAND else LEFT_HAND_COLOR
+
 		var block_rect := Rect2(
 			key_rect.position.x + 2.0,
 			note_top_y,
@@ -103,5 +115,22 @@ func _draw() -> void:
 			note_height,
 		)
 		draw_rect(block_rect, color)
-		# Subtle lighter border
 		draw_rect(block_rect, Color(1.0, 1.0, 1.0, 0.15), false, 1.0)
+
+
+func _is_at_hit_line(note_start_time: float, current_time: float) -> bool:
+	return absf(note_start_time - current_time) < 0.01
+
+
+func _on_note_cleared(pitch: int) -> void:
+	# Find the note index for this pitch that was just cleared
+	var song_notes: Array[Array] = _game_engine.get_song_notes()
+	for i: int in range(song_notes.size()):
+		if _game_engine.cleared_notes.has(i) and not _clear_flashes.has(i):
+			if song_notes[i][0] as int == pitch:
+				_clear_flashes[i] = FLASH_DURATION
+				break
+
+
+func _on_wrong_note() -> void:
+	_wrong_flash_timer = FLASH_DURATION
