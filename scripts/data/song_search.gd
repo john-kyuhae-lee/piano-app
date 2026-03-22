@@ -44,6 +44,38 @@ static func get_all_songs(limit: int = 100) -> Array[Dictionary]:
 	return search("", limit)
 
 
+static func get_recommendations(song_id: String, limit: int = 5) -> Array[Dictionary]:
+	"""Get recommended songs similar to the given song."""
+	var project_dir: String = ProjectSettings.globalize_path("res://")
+	var db_path: String = project_dir + "corpus.db"
+	var prep_dir: String = project_dir + "piano-prep"
+	var output: Array = []
+
+	var home: String = OS.get_environment("HOME")
+	var uv_path: String = home + "/.local/bin/uv"
+	var cmd: String = (
+		"PYTHONWARNINGS=ignore '%s' run --project '%s' piano-prep recommend-json '%s' --db-path '%s' --limit %d"
+		% [uv_path, prep_dir, song_id, db_path, limit]
+	)
+
+	var exit_code: int = OS.execute("bash", ["-c", cmd], output, true)
+	if exit_code != 0 or output.is_empty():
+		return []
+
+	var json := JSON.new()
+	var err: Error = json.parse(output[0] as String)
+	if err != OK:
+		return []
+
+	if json.data is Array:
+		var results: Array[Dictionary] = []
+		for item: Variant in json.data as Array:
+			if item is Dictionary:
+				results.append(item as Dictionary)
+		return results
+	return []
+
+
 static func prepare_song(song_id: String, file_path: String) -> String:
 	"""Prepare a song for play (MusicXML → game JSON). Returns output path."""
 	var project_dir: String = ProjectSettings.globalize_path("res://")

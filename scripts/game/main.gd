@@ -9,6 +9,8 @@ var _status_label: Label
 var _state_label: Label
 var _song_list: SongListUI
 var _in_game: bool = false
+var _current_song_id: String = ""
+var _current_song: Dictionary = {}
 
 
 func _ready() -> void:
@@ -55,6 +57,7 @@ func _ready() -> void:
 	add_child(_state_label)
 
 	Events.game_state_changed.connect(_on_game_state_changed)
+	Events.song_completed.connect(_on_song_completed)
 
 	# Check for --song command line arg (direct play mode)
 	var song_path: String = _get_arg("--song")
@@ -103,8 +106,10 @@ func _show_song_list() -> void:
 
 
 func _on_song_selected(song: Dictionary) -> void:
+	_current_song = song
 	var file_path: String = song.get("file_path", "") as String
 	var song_id: String = song.get("id", "") as String
+	_current_song_id = song_id
 
 	if file_path == "":
 		push_warning("No file_path in song data")
@@ -176,9 +181,26 @@ func _update_state_label(state: GameEngine.State) -> void:
 			_state_label.text = ""
 			_state_label.visible = false
 		GameEngine.State.COMPLETE:
-			_state_label.text = "Song Complete! (ESC for song list)"
 			_state_label.visible = true
 			_state_label.add_theme_color_override(&"font_color", Color(0.4, 0.95, 0.5, 0.95))
+			if _current_song_id != "":
+				var recs: Array[Dictionary] = SongSearch.get_recommendations(_current_song_id, 3)
+				if recs.size() > 0:
+					var rec_text: String = "Song Complete!\n\nTry these next:\n"
+					for r: Dictionary in recs:
+						rec_text += "  • " + (r.get("title", "") as String) + "\n"
+					rec_text += "\nESC for song list"
+					_state_label.text = rec_text
+				else:
+					_state_label.text = "Song Complete! (ESC for song list)"
+			else:
+				_state_label.text = "Song Complete! (ESC for song list)"
+
+
+func _on_song_completed() -> void:
+	if _current_song_id != "":
+		var title: String = _current_song.get("title", "Unknown") as String
+		PlayHistory.record_play(_current_song_id, title, true)
 
 
 func _get_arg(flag: String) -> String:

@@ -10,6 +10,7 @@ from rich.console import Console
 
 from .fingering import annotate_fingering
 from .indexer import index_corpus_dir, index_music21_corpus, search_songs
+from .recommender import compute_neighbors, get_recommendations
 from .metadata import extract_metadata
 from .models import Song
 from .parser import parse_musicxml
@@ -158,6 +159,39 @@ def search_json(
         raise typer.Exit(1)
 
     results = search_songs(db_path, query, limit=limit)
+    print(json_mod.dumps(results))
+
+
+@app.command()
+def recommend(
+    db_path: Path = typer.Option(DEFAULT_DB, help="SQLite database path"),
+) -> None:
+    """Precompute song recommendations (run after indexing)."""
+    if not db_path.exists():
+        console.print(f"[red]Database not found: {db_path}[/red]")
+        raise typer.Exit(1)
+
+    console.print("[bold]Computing recommendations...[/bold]")
+    total = compute_neighbors(db_path)
+    console.print(f"[green]✓ Done:[/green] {total} neighbor pairs computed")
+
+
+@app.command("recommend-json")
+def recommend_json(
+    song_id: str = typer.Argument(..., help="Song ID to get recommendations for"),
+    db_path: Path = typer.Option(DEFAULT_DB, help="SQLite database path"),
+    limit: int = typer.Option(10, help="Max recommendations"),
+) -> None:
+    """Get recommendations for a song (JSON output for Godot)."""
+    import json as json_mod
+    import warnings
+    warnings.filterwarnings("ignore")
+
+    if not db_path.exists():
+        print("[]")
+        raise typer.Exit(1)
+
+    results = get_recommendations(db_path, song_id, limit=limit)
     print(json_mod.dumps(results))
 
 
