@@ -12,6 +12,8 @@ const CLEARED_FLASH_COLOR := Color(1.0, 1.0, 1.0, 0.9)
 const WRONG_FLASH_COLOR := Color(0.9, 0.15, 0.15, 0.9)
 const HIT_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.5)
 const HIT_LINE_HEIGHT: float = 3.0
+const FINGER_COLOR := Color(1.0, 1.0, 1.0, 0.95)
+const FINGER_FONT_SIZE: int = 22
 
 ## Pixels per second of song time — controls how fast notes scroll.
 const PIXELS_PER_SECOND: float = 400.0
@@ -25,6 +27,7 @@ const NOTE_GAP: float = 4.0
 var _hit_line_y: float
 var _keyboard: PianoKeyboard
 var _game_engine: GameEngine
+var _font: Font
 
 ## Flash state for cleared notes: note_index -> time_remaining
 var _clear_flashes: Dictionary = {}
@@ -36,6 +39,7 @@ func setup(keyboard: PianoKeyboard, game_engine: GameEngine) -> void:
 	_keyboard = keyboard
 	_game_engine = game_engine
 	_hit_line_y = keyboard.get_top_y() - 10.0
+	_font = ThemeDB.fallback_font
 	Events.note_cleared.connect(_on_note_cleared)
 	Events.wrong_note_played.connect(_on_wrong_note)
 
@@ -116,6 +120,20 @@ func _draw() -> void:
 		)
 		draw_rect(block_rect, color)
 		draw_rect(block_rect, Color(1.0, 1.0, 1.0, 0.15), false, 1.0)
+
+		# Draw finger number if available
+		var finger: int = note[4] as int if note.size() > 4 else 0
+		if finger > 0 and note_height >= FINGER_FONT_SIZE:
+			var finger_str: String = str(finger)
+			var text_size: Vector2 = _font.get_string_size(
+				finger_str, HORIZONTAL_ALIGNMENT_CENTER, -1, FINGER_FONT_SIZE,
+			)
+			var text_x: float = block_rect.position.x + (block_rect.size.x - text_size.x) / 2.0
+			var text_y: float = block_rect.position.y + block_rect.size.y - (block_rect.size.y - text_size.y) / 2.0
+			draw_string(
+				_font, Vector2(text_x, text_y), finger_str,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, FINGER_FONT_SIZE, FINGER_COLOR,
+			)
 
 
 func _is_at_hit_line(note_start_time: float, current_time: float) -> bool:
