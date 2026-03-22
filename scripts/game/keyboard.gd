@@ -30,11 +30,11 @@ const BORDER_WIDTH: float = 2.0
 ## of a white key width, measured from the left edge of C in that octave.
 ## note_in_octave -> offset from octave start (in white key widths)
 const BLACK_KEY_OFFSETS: Dictionary = {
-	1: 0.55,   # C# — between C and D
-	3: 1.6,    # D# — between D and E
-	6: 3.5,    # F# — between F and G
-	8: 4.5,    # G# — between G and A
-	10: 5.55,  # A# — between A and B
+	1: 0.95,   # C# — between C(0) and D(1), slightly left
+	3: 2.05,   # D# — between D(1) and E(2), slightly right
+	6: 3.93,   # F# — between F(3) and G(4), slightly left
+	8: 4.97,   # G# — between G(4) and A(5), centered
+	10: 5.95,  # A# — between A(5) and B(6), slightly left
 }
 
 var _viewport_size: Vector2
@@ -163,7 +163,7 @@ func _calculate_layout() -> void:
 		var black_w: float = _white_key_width * BLACK_KEY_WIDTH_RATIO
 		var black_h: float = KEYBOARD_HEIGHT * BLACK_KEY_HEIGHT_RATIO
 		var a0_idx: int = _white_key_indices[21] as int
-		var center_x: float = (a0_idx as float + 0.55) * _white_key_width
+		var center_x: float = (a0_idx as float + 0.95) * _white_key_width
 		_key_rects[22] = Rect2(
 			center_x - black_w / 2.0,
 			keyboard_top,
