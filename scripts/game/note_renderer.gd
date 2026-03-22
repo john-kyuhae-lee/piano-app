@@ -19,6 +19,8 @@ const PIXELS_PER_SECOND: float = 400.0
 const OVERDRAW_MARGIN: float = 200.0
 ## How long visual feedback lasts (seconds).
 const FLASH_DURATION: float = 0.25
+## Gap in pixels between consecutive notes so same-pitch notes are visually distinct.
+const NOTE_GAP: float = 4.0
 
 var _hit_line_y: float
 var _keyboard: PianoKeyboard
@@ -85,7 +87,7 @@ func _draw() -> void:
 
 		# Note bottom edge Y = hit_line_y when note_time == song_time
 		var note_bottom_y: float = _hit_line_y - (start_time - current_time) * PIXELS_PER_SECOND
-		var note_height: float = duration_time * PIXELS_PER_SECOND
+		var note_height: float = duration_time * PIXELS_PER_SECOND - NOTE_GAP
 		var note_top_y: float = note_bottom_y - note_height
 
 		# Cull notes that are fully off-screen
