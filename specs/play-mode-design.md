@@ -25,7 +25,10 @@ For each section:
      - If all GREEN: bump tempo by 15% (e.g., 50% → 65% → 80% → 95% → 100%)
      - If any YELLOW: bump tempo by 10%
      - If any RED: stay at current tempo, highlight problem sections
-     - Kid can also manually set tempo anytime
+     - 2+ RED on same section in a row: drop tempo by 5% (flow theory: sustained anxiety is worse than boredom)
+     - 3 RED on same section: auto-lower tempo + encourage ("Let's try a bit slower!")
+     - 3 stars at 100%: suggest a harder piece (prevent boredom)
+     - Kid can also manually set tempo anytime (player agency > system control)
 
   d) Star thresholds (at current tempo):
      - 1 star: completed
@@ -96,13 +99,16 @@ When eventually implemented:
 - If released early: block just stops filling, no negative feedback
 - Never blocking, never scored, purely visual encouragement
 
-## Watch Mode (Pre-Play)
+## Watch Mode (Pre-Play) — Gordon's Audiation
 
 Before first play of a new piece:
 - Blocks fall at 50% tempo, no input required
-- Kid observes the note pattern, builds mental map (audiation)
+- **No finger numbers shown** (Gordon: aural/oral before symbolic — let the kid absorb the motion pattern first)
+- **4-second pauses between phrase sections** to allow audiation (internal musical processing)
+- Kid observes the note pattern, builds mental map
 - Plays through once automatically, then transitions to Learn Mode
 - Optional — kid can skip to any mode
+- Finger numbers appear only when entering Learn Mode (Gordon: symbolic association comes after aural)
 
 ## Section Boundary Detection (M5 Pipeline)
 
@@ -123,6 +129,41 @@ Store as `sections` array in song JSON:
 }
 ```
 
+## Scoring Formula (Asymmetric, from PianoBooster research)
+
+Wrong notes are penalized 5x harder than correct notes are rewarded. This prevents button-mashing while keeping the feel encouraging.
+
+```gdscript
+const STEP_UP: float = 0.01      # Correct note
+const STEP_DOWN: float = -0.05   # Wrong/missed note (5x penalty)
+var accuracy: float = 0.5        # Running score, clamped 0.0–1.0
+```
+
+Stars: 1 = completed, 2 = accuracy >= 0.80, 3 = accuracy >= 0.95
+
+## Next-Note Keyboard Highlight (from Synthesia)
+
+In Learn Mode, when blocks are frozen at the hit line:
+- Target key(s) on the virtual keyboard glow with the hand color (green/blue)
+- More effective than requiring the kid to look up at the block, find the column, then look down at the keyboard
+- Subtle pulse animation on the highlighted key(s)
+- Removed in Play/Perform modes (kid should develop independence)
+
+## Visual Beat Reference (from Dalcroze/Midiano)
+
+During Play and Perform modes:
+- Subtle measure lines behind the waterfall (every bar)
+- Hit line brightness pulses gently on each beat
+- Provides visual metronome without audio click
+- Reinforces internal pulse (Dalcroze principle)
+
 ## Target Milestone
 
 M8 (Game Feel & Practice Mode) — but section boundaries should be added to the JSON schema in M5 (Song Pipeline).
+
+## Research Sources
+
+See `specs/design-references.md` for full analysis of:
+- Open source: Neothesia, PianoBooster, Midiano
+- Pedagogy: Gordon (audiation), Dalcroze (rhythm), Csikszentmihalyi (flow), Suzuki, Faber
+- Commercial: MuseFlow, Piano Marvel, Synthesia
