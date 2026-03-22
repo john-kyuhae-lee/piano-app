@@ -1,21 +1,26 @@
 # Current Milestone
 
-## Active: M7 — Discovery & Recommendations
+## Active: M8 — Game Feel & Practice Mode
 
 **Status**: Complete
 
-**Goal**: After finishing a song, recommend similar pieces. Track play history and favorites.
+**Goal**: Three play modes (Learn/Play/Perform), scoring, visual polish, practice tools.
 
 **Done**:
-- Content-based recommendation engine (difficulty, tempo, key, density, composer similarity)
-- Precomputed top-20 neighbors per song in SQLite (9720 pairs for 486 songs)
-- CLI: `piano-prep recommend` (precompute), `piano-prep recommend-json` (Godot integration)
-- Godot SongSearch.get_recommendations() — returns similar songs
-- Song completion screen shows "Try these next:" with 3 recommendations
-- Play history tracking (user://play_history.json) — play count, completed count, last played
-- Favorites system (toggle, persist)
+- Three play modes in GameEngine: Learn (wait), Play (fixed tempo, notes pass on miss), Perform (full speed)
+- Asymmetric scoring: 5x penalty for wrong notes, running accuracy 0.0-1.0
+- Star rating: 1 star (completed), 2 stars (80%+), 3 stars (95%+)
+- Streak tracking (current + best)
+- Timing windows: Perfect (±50ms), Good (±150ms), OK (±300ms)
+- Speed control: 25%-150% via +/- keys in Ready state
+- Hand filter: right only / left only / both
+- Visual beat lines behind waterfall (subtle metronome, Dalcroze)
+- Fake glow effect on note blocks (additive-blend, Neothesia approach)
+- Missed notes auto-clear in timed modes (no blocking)
+- Mode switching: 1=Learn, 2=Play, 3=Perform in Ready state
+- Completion screen: stars, accuracy %, streak, correct/wrong counts + recommendations
 
 **Blockers**: None
 
 **Next**:
-- Begin M8 (Game Feel & Practice Mode — 3 modes, scoring, visual polish)
+- Begin M9 (Kiosk & Deploy)
