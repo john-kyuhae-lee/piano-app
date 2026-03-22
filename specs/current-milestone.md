@@ -1,21 +1,22 @@
 # Current Milestone
 
-## Active: M2 — The Piano Talks Back
+## Active: M3 — First Playable
 
-**Status**: Complete
+**Status**: Complete — needs playtesting with Yamaha P-125
 
-**Goal**: Connect to Yamaha P-125 (or any USB-MIDI keyboard) via Godot's built-in MIDI. When a key is pressed on the real piano, the virtual key lights up on screen.
+**Goal**: Falling blocks + MIDI input + wait mode. The kid plays along at their own pace — blocks pause at the hit line until the correct key is pressed.
 
 **Done**:
-- M1 complete (falling blocks + keyboard rendering)
-- Events signal bus autoload (signals only — midi_note_on/off, device_connected/disconnected)
-- MidiManager autoload (InputEventMIDI handling, device polling every 2s)
-- Keyboard MIDI highlight (green for right hand, blue for left hand)
-- MIDI connection status label (top-left corner)
-- Verified: runs clean with and without MIDI device
+- M1 complete (rendering proof)
+- M2 complete (MIDI input verified with Yamaha P-125)
+- Game signals on Events bus (note_cleared, wrong_note_played, song_completed, game_state_changed)
+- GameEngine with wait mode, state machine (Ready → Playing → Complete), hit detection
+- NoteRenderer refactored — driven by GameEngine, visual feedback (white flash on clear, red flash on wrong)
+- Main scene wiring — state labels ("Press any key to start", "Song Complete!")
+- Song: Twinkle Twinkle Little Star, right hand only, 100 BPM
 
 **Blockers**: None
 
 **Next**:
-- Test with physical Yamaha P-125 when available
-- Begin M3 (First Playable — combine falling blocks + MIDI input + wait mode)
+- Playtest with Yamaha P-125 — verify feel, latency, correctness
+- Begin M4 spec (Song Pipeline & Fingering)
