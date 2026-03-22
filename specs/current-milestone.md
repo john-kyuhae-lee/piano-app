@@ -1,27 +1,22 @@
 # Current Milestone
 
-## Active: M5 — Song Pipeline & Fingering
+## Active: M6 — Song Library & Search
 
 **Status**: Complete
 
-**Goal**: MusicXML → game-ready JSON pipeline. Load real songs in Godot. Display finger numbers on blocks.
+**Goal**: Searchable song library with 486 indexed pieces. Kid browses, picks a song, it prepares and plays.
 
 **Done**:
-- Python `piano-prep` tool with uv project, src layout
-- MusicXML parser (music21): extracts notes with pitch, beat, duration, hand split
-- Metadata extraction: title, composer, key, tempo, time signature, difficulty (1-10)
-- Section boundary detection: rests + 4-bar fallback
-- Fingering wrapper (pianoplayer): try/except, non-fatal on failure
-- CLI: `piano-prep <file.mxl>` with progress output
-- JSON writer: game-ready format with meta, sections, tracks
-- Test songs: Twinkle Twinkle, Ode to Joy (prepared as JSON)
-- Godot SongLoader: reads JSON, returns typed note arrays
-- GameEngine refactored: accepts song data from loader, dynamic BPM
-- Command-line song selection: `-- --song songs/twinkle.json`
-- Finger number rendering on blocks (white text, centered)
+- SQLite FTS5 corpus indexer (incremental, hash-based skip)
+- music21 built-in corpus indexed (486 pieces: Bach, Mozart, Beethoven, Chopin, Haydn, Schubert, Schumann)
+- CLI: `piano-prep index`, `piano-prep search`, `piano-prep search-json`
+- Godot SongSearch: calls Python via OS.execute, returns JSON results
+- Song list UI: "Piano Hero" title, search bar, scrollable list with difficulty stars
+- Song selection: click a song → prepare (MusicXML → JSON) → play
+- ESC returns to song list from gameplay
+- CanvasLayer for proper Control-over-Node2D rendering
 
 **Blockers**: None
 
 **Next**:
-- Install pianoplayer and prepare songs with actual fingering
-- Begin M6 spec (Song Library & Search)
+- Begin M7 (Discovery & Recommendations)

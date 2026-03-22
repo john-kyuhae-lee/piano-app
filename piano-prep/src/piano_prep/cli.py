@@ -142,6 +142,25 @@ def search(
         )
 
 
+@app.command("search-json")
+def search_json(
+    query: str = typer.Argument("", help="Search query (title or composer)"),
+    db_path: Path = typer.Option(DEFAULT_DB, help="SQLite database path"),
+    limit: int = typer.Option(20, help="Max results"),
+) -> None:
+    """Search the song index and output JSON (for Godot integration)."""
+    import json as json_mod
+    import warnings
+    warnings.filterwarnings("ignore")
+
+    if not db_path.exists():
+        print("[]")
+        raise typer.Exit(1)
+
+    results = search_songs(db_path, query, limit=limit)
+    print(json_mod.dumps(results))
+
+
 def _compute_song_id(path: Path) -> str:
     """SHA256 hash of file content, first 12 hex chars."""
     h = hashlib.sha256(path.read_bytes()).hexdigest()
