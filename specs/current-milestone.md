@@ -1,29 +1,21 @@
 # Current Milestone
 
-## Active: M1 — Proof of Life
+## Active: M2 — The Piano Talks Back
 
 **Status**: Complete
 
-**Goal**: Godot window with a virtual piano keyboard at the bottom and colored blocks falling from the top. Hardcoded 8-bar melody (C major scale, both hands). No MIDI, no file loading. Pure rendering proof.
+**Goal**: Connect to Yamaha P-125 (or any USB-MIDI keyboard) via Godot's built-in MIDI. When a key is pressed on the real piano, the virtual key lights up on screen.
 
 **Done**:
-- Project scaffolding (repo, CLAUDE.md, specs)
-- Roadmap v2 (8 milestones — kid-driven discovery model with PDMX corpus + recommendations)
-- Technical research (Godot MIDI, rendering, fingering algorithms, P-125 compatibility, song sources)
-- Godot 4.6.1 installed (Compatibility renderer confirmed on Intel Iris 6100)
-- M1 spec (`specs/m1-proof-of-life.md`)
-- M1 plan (`plans/m1-proof-of-life-plan.md`)
-- M1 implementation:
-  - `project.godot` — Compatibility renderer, 1920×1080
-  - `scripts/game/keyboard.gd` — 88-key piano keyboard via `_draw()`
-  - `scripts/game/note_renderer.gd` — falling blocks via single `_draw()`, looping demo
-  - `scripts/game/main.gd` — composes keyboard + renderer
-  - `scenes/main.tscn` — entry point scene
-- Verified: runs clean, no errors, no warnings
+- M1 complete (falling blocks + keyboard rendering)
+- Events signal bus autoload (signals only — midi_note_on/off, device_connected/disconnected)
+- MidiManager autoload (InputEventMIDI handling, device polling every 2s)
+- Keyboard MIDI highlight (green for right hand, blue for left hand)
+- MIDI connection status label (top-left corner)
+- Verified: runs clean with and without MIDI device
 
 **Blockers**: None
 
 **Next**:
-- Visual review — run and confirm keyboard layout + falling blocks look correct
-- Commit M1
-- Begin M2 spec (MIDI input from Yamaha P-125)
+- Test with physical Yamaha P-125 when available
+- Begin M3 (First Playable — combine falling blocks + MIDI input + wait mode)

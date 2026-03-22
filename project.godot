@@ -8,6 +8,11 @@ config/name="Piano Hero"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3")
 
+[autoload]
+
+Events="*res://scripts/autoloads/events.gd"
+MidiManager="*res://scripts/autoloads/midi_manager.gd"
+
 [display]
 
 window/size/viewport_width=1920
