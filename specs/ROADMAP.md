@@ -148,7 +148,28 @@ No ML required. Content-based similarity using features music21 can compute:
 
 ---
 
-### M4 — Song Pipeline & Fingering
+### M4 — Debug Observability
+
+**Goal**: Automated testing and visual inspection loop. The AI agent (Claude Code) can launch the game, interact with it, and observe results through structured telemetry and strategic screenshots — without manual human involvement.
+
+**What Dad sees**: Nothing — this is invisible infrastructure. The game works the same. But the AI building it can now self-test every change.
+
+**Deliverables**:
+- Structured telemetry logger (JSONL): frame, song_time, state, events, FPS, input-to-response deltas
+- Viewport screenshot capture on state transitions (Ready, Playing, first clear, Complete)
+- Computer keyboard → MIDI mapping for testing without physical piano
+- Test harness shell script: launch game, send ydotool keypresses, collect telemetry + screenshots
+- All debug features gated behind `--telemetry` / `--capture` user args (zero cost in normal play)
+
+**Technical notes**:
+- Telemetry connects to Events bus signals — no coupling to game logic
+- Screenshots via `get_viewport().get_texture().get_image().save_png()` — captures viewport directly, no compositor race conditions
+- `ydotool` for kernel-level input injection (works with Wayland/Godot unlike `wtype`)
+- Three observation layers: telemetry (timing/state), screenshots (visual), video (occasional, via `--write-movie`)
+
+---
+
+### M5 — Song Pipeline & Fingering
 
 **Goal**: Build the automated song preparation pipeline. MusicXML in, game-ready JSON with fingering out. Test with real songs the kid wants to play.
 
@@ -203,7 +224,7 @@ No ML required. Content-based similarity using features music21 can compute:
 
 ---
 
-### M5 — Song Library & Search
+### M6 — Song Library & Search
 
 **Goal**: The kid has a massive library of songs and can search, browse, and pick whatever they want. No waiting for Dad.
 
@@ -239,7 +260,7 @@ No ML required. Content-based similarity using features music21 can compute:
 
 ---
 
-### M6 — Discovery & Recommendations
+### M7 — Discovery & Recommendations
 
 **Goal**: The app actively helps the kid discover new music. "You liked this? Try these." The library grows with the kid's interests.
 
@@ -280,7 +301,7 @@ No ML required. Content-based similarity using features music21 can compute:
 
 ---
 
-### M7 — Game Feel & Practice Mode
+### M8 — Game Feel & Practice Mode
 
 **Goal**: Polish the core gameplay and add practice features. This is where it goes from "working prototype" to "something the kid wants to use every day."
 
@@ -317,7 +338,7 @@ No ML required. Content-based similarity using features music21 can compute:
 
 ---
 
-### M8 — Kiosk & Deploy
+### M9 — Kiosk & Deploy
 
 **Goal**: The app runs on the dedicated MacBook as a kiosk. Power on → Piano Hero. No desktop, no distractions. Like a Nintendo.
 
