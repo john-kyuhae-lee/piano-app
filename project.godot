@@ -12,6 +12,7 @@ config/features=PackedStringArray("4.3")
 
 Events="*res://scripts/autoloads/events.gd"
 MidiManager="*res://scripts/autoloads/midi_manager.gd"
+DebugTelemetry="*res://scripts/autoloads/debug_telemetry.gd"
 
 [display]
 
