@@ -1,22 +1,21 @@
 # Current Milestone
 
-## Active: M6 — Song Library & Search
+## Active: M7 — Discovery & Recommendations
 
 **Status**: Complete
 
-**Goal**: Searchable song library with 486 indexed pieces. Kid browses, picks a song, it prepares and plays.
+**Goal**: After finishing a song, recommend similar pieces. Track play history and favorites.
 
 **Done**:
-- SQLite FTS5 corpus indexer (incremental, hash-based skip)
-- music21 built-in corpus indexed (486 pieces: Bach, Mozart, Beethoven, Chopin, Haydn, Schubert, Schumann)
-- CLI: `piano-prep index`, `piano-prep search`, `piano-prep search-json`
-- Godot SongSearch: calls Python via OS.execute, returns JSON results
-- Song list UI: "Piano Hero" title, search bar, scrollable list with difficulty stars
-- Song selection: click a song → prepare (MusicXML → JSON) → play
-- ESC returns to song list from gameplay
-- CanvasLayer for proper Control-over-Node2D rendering
+- Content-based recommendation engine (difficulty, tempo, key, density, composer similarity)
+- Precomputed top-20 neighbors per song in SQLite (9720 pairs for 486 songs)
+- CLI: `piano-prep recommend` (precompute), `piano-prep recommend-json` (Godot integration)
+- Godot SongSearch.get_recommendations() — returns similar songs
+- Song completion screen shows "Try these next:" with 3 recommendations
+- Play history tracking (user://play_history.json) — play count, completed count, last played
+- Favorites system (toggle, persist)
 
 **Blockers**: None
 
 **Next**:
-- Begin M7 (Discovery & Recommendations)
+- Begin M8 (Game Feel & Practice Mode — 3 modes, scoring, visual polish)
