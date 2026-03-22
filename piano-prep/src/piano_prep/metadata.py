@@ -49,8 +49,9 @@ def _build_metadata(
     # Tempo
     tempo_bpm = 120  # default
     for mm in score.flatten().getElementsByClass(music21.tempo.MetronomeMark):
-        tempo_bpm = int(mm.number)
-        break
+        if mm.number is not None:
+            tempo_bpm = int(mm.number)
+            break
 
     # Time signature
     time_sig = (4, 4)  # default
