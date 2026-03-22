@@ -1,0 +1,112 @@
+{
+  "meta": {
+    "title": "twinkle",
+    "composer": "Traditional",
+    "difficulty": 3.6,
+    "tempo_bpm": 100,
+    "time_signature": [
+      4,
+      4
+    ],
+    "duration_seconds": 9.6,
+    "key": "C major"
+  },
+  "sections": [
+    {
+      "start_beat": 0.0,
+      "end_beat": 16.0,
+      "label": "A"
+    }
+  ],
+  "tracks": [
+    {
+      "hand": "right",
+      "notes": [
+        {
+          "pitch": 60,
+          "start_beat": 0.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 60,
+          "start_beat": 1.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 67,
+          "start_beat": 2.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 67,
+          "start_beat": 3.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 69,
+          "start_beat": 4.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 69,
+          "start_beat": 5.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 67,
+          "start_beat": 6.0,
+          "duration_beats": 2.0,
+          "finger": null
+        },
+        {
+          "pitch": 65,
+          "start_beat": 8.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 65,
+          "start_beat": 9.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 64,
+          "start_beat": 10.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 64,
+          "start_beat": 11.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 62,
+          "start_beat": 12.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 62,
+          "start_beat": 13.0,
+          "duration_beats": 1.0,
+          "finger": null
+        },
+        {
+          "pitch": 60,
+          "start_beat": 14.0,
+          "duration_beats": 2.0,
+          "finger": null
+        }
+      ]
+    }
+  ]
+}

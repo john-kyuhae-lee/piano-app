@@ -1,20 +1,27 @@
 # Current Milestone
 
-## Active: M4 — Debug Observability
+## Active: M5 — Song Pipeline & Fingering
 
 **Status**: Complete
 
-**Goal**: Automated testing loop — AI agent can launch game, play it via ydotool, and observe results through structured telemetry + viewport screenshots.
+**Goal**: MusicXML → game-ready JSON pipeline. Load real songs in Godot. Display finger numbers on blocks.
 
 **Done**:
-- DebugTelemetry autoload — JSONL event logger (frame, song_time, state, FPS, input events)
-- DebugCapture autoload — viewport screenshots on state transitions (Ready, Playing, first clear, Complete)
-- Keyboard-to-MIDI mapping in MidiManager (Z=C4, X=D4, etc.)
-- playtest.sh test harness — launches game, plays Twinkle via ydotool, collects results
-- Verified: 14/14 notes cleared, 0 wrong notes, avg 57.8 FPS
-- Roadmap renumbered (M4=observability, M5-M9 shifted)
+- Python `piano-prep` tool with uv project, src layout
+- MusicXML parser (music21): extracts notes with pitch, beat, duration, hand split
+- Metadata extraction: title, composer, key, tempo, time signature, difficulty (1-10)
+- Section boundary detection: rests + 4-bar fallback
+- Fingering wrapper (pianoplayer): try/except, non-fatal on failure
+- CLI: `piano-prep <file.mxl>` with progress output
+- JSON writer: game-ready format with meta, sections, tracks
+- Test songs: Twinkle Twinkle, Ode to Joy (prepared as JSON)
+- Godot SongLoader: reads JSON, returns typed note arrays
+- GameEngine refactored: accepts song data from loader, dynamic BPM
+- Command-line song selection: `-- --song songs/twinkle.json`
+- Finger number rendering on blocks (white text, centered)
 
 **Blockers**: None
 
 **Next**:
-- Begin M5 spec (Song Pipeline & Fingering)
+- Install pianoplayer and prepare songs with actual fingering
+- Begin M6 spec (Song Library & Search)

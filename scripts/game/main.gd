@@ -19,6 +19,9 @@ func _ready() -> void:
 	_game_engine.name = "GameEngine"
 	add_child(_game_engine)
 
+	# Load song from --song arg or use fallback
+	_load_song()
+
 	_note_renderer = NoteRenderer.new()
 	_note_renderer.name = "NoteRenderer"
 	add_child(_note_renderer)
@@ -75,6 +78,27 @@ func _on_device_disconnected() -> void:
 
 func _on_game_state_changed(state: int) -> void:
 	_update_state_label(state as GameEngine.State)
+
+
+func _load_song() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var song_path: String = ""
+	for i: int in range(args.size()):
+		if args[i] == "--song" and i + 1 < args.size():
+			song_path = args[i + 1]
+			break
+
+	if song_path != "":
+		var song_data: Dictionary = SongLoader.load_song(song_path)
+		if not song_data.is_empty():
+			_game_engine.load_song(song_data)
+			var title: String = song_data.get("meta", {}).get("title", "Unknown") as String
+			print("Loaded song: " + title)
+		else:
+			push_warning("Failed to load song, using fallback")
+			_game_engine.use_fallback()
+	else:
+		_game_engine.use_fallback()
 
 
 func _update_state_label(state: GameEngine.State) -> void:
