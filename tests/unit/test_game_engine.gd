@@ -68,25 +68,26 @@ func test_wrong_note_does_not_advance_in_learn_mode() -> void:
 func test_all_notes_cleared_completes_learn_mode() -> void:
 	_engine.play_mode = GameEngine.PlayMode.LEARN
 	_engine.start_playing()
-	# Fast-forward through lead-in and all notes
-	for beat_time: float in [0.0, 0.5, 1.0]:
-		_engine.song_time = beat_time - 0.001
-		_engine._process(0.016)  # triggers waiting at beat_time
-	# Now clear all 3 notes in sequence
-	# First, go back and handle each one
-	_engine.song_time = -1.5
-	_engine.start_playing()  # Reset
-	# Simulate a realistic playthrough
-	_engine.song_time = -0.001
-	_engine._process(0.016)  # song_time = 0.015, >= 0.0, wait for note 0
+	# Note: start_playing sets song_time = -1.5
+	# Advance past lead-in to first note at beat 0 (time 0.0)
+	# spb at 120 BPM = 0.5s, so beat 0 = 0.0s, beat 1 = 0.5s, beat 2 = 1.0s
+	_engine.song_time = -0.01
+	_engine._process(0.02)  # song_time = 0.01, >= 0.0, triggers wait
 	assert_bool(_engine._waiting).is_true()
-	Events.midi_note_on.emit(60, 80)  # Clear note 0
+	Events.midi_note_on.emit(60, 80)
+	assert_bool(_engine.cleared_notes.has(0)).is_true()
 	assert_int(_engine._current_event_index).is_equal(1)
-	_engine._process(0.5)  # song_time ~= 0.515, >= 0.5, wait for note 1
-	Events.midi_note_on.emit(62, 80)  # Clear note 1
+	assert_bool(_engine._waiting).is_false()
+	# Now advance 0.5s to reach beat 1 (time 0.5s)
+	# But song_time was snapped to 0.0 by _process, so we need to advance 0.5+
+	_engine._process(0.51)  # song_time = 0.0 + 0.51 = 0.51, >= 0.5
+	assert_bool(_engine._waiting).is_true()
+	Events.midi_note_on.emit(62, 80)
 	assert_int(_engine._current_event_index).is_equal(2)
-	_engine._process(0.5)  # song_time ~= 1.015, >= 1.0, wait for note 2
-	Events.midi_note_on.emit(64, 80)  # Clear note 2
+	# Advance to beat 2 (time 1.0s)
+	_engine._process(0.51)  # song_time = 0.5 + 0.51 = 1.01, >= 1.0
+	assert_bool(_engine._waiting).is_true()
+	Events.midi_note_on.emit(64, 80)
 	assert_int(_engine.state).is_equal(GameEngine.State.COMPLETE)
 
 
