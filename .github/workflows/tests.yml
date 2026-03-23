@@ -1,0 +1,60 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  python-tests:
+    name: Python Pipeline Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: piano-prep
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Lint
+        run: uv run ruff check src/
+
+  godot-tests:
+    name: Godot Game Logic Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GdUnit4 addon
+        run: |
+          git clone --depth 1 https://github.com/MikeSchulze/gdUnit4.git /tmp/gdunit4
+          cp -r /tmp/gdunit4/addons/gdUnit4 addons/gdUnit4
+
+      - name: Install Godot
+        uses: chickensoft-games/setup-godot@v3
+        with:
+          version: 4.6.1
+          use-dotnet: false
+
+      - name: Import project
+        run: godot --path . --headless --import
+        timeout-minutes: 2
+
+      - name: Run unit tests
+        run: |
+          godot --path . --headless \
+            --script addons/gdUnit4/bin/GdUnitCmdTool.gd \
+            -a tests/unit/ \
+            --ignoreHeadlessMode -c
+        timeout-minutes: 5
