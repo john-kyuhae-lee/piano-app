@@ -17,3 +17,5 @@ Thumbs.db
 build/
 export/
 corpus.db
+addons/gdUnit4/
+reports/

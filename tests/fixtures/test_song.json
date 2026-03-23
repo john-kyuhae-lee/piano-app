@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "title": "Test Song",
+    "composer": "Test",
+    "difficulty": 1.0,
+    "tempo_bpm": 120,
+    "time_signature": [4, 4],
+    "duration_seconds": 2.0,
+    "key": "C major"
+  },
+  "sections": [{"start_beat": 0.0, "end_beat": 4.0, "label": "A"}],
+  "tracks": [{
+    "hand": "right",
+    "notes": [
+      {"pitch": 60, "start_beat": 0.0, "duration_beats": 1.0, "finger": 1},
+      {"pitch": 62, "start_beat": 1.0, "duration_beats": 1.0, "finger": 2},
+      {"pitch": 64, "start_beat": 2.0, "duration_beats": 1.0, "finger": 3}
+    ]
+  }]
+}
