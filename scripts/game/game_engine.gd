@@ -61,7 +61,13 @@ func _ready() -> void:
 
 
 func load_song(song_data: Dictionary) -> void:
-	_song_notes = song_data.get("notes", FALLBACK_NOTES) as Array[Array]
+	var raw_notes: Array = song_data.get("notes", []) as Array
+	_song_notes.clear()
+	if raw_notes.is_empty():
+		_song_notes = FALLBACK_NOTES.duplicate()
+	else:
+		for note: Variant in raw_notes:
+			_song_notes.append(note as Array)
 	_bpm = song_data.get("tempo_bpm", DEFAULT_BPM) as float
 	_seconds_per_beat = 60.0 / _bpm
 	_build_events()
