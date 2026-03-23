@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 from .models import Track
@@ -15,7 +14,7 @@ def annotate_fingering(path: Path, tracks: list[Track]) -> None:
     pianoplayer is optional — if not installed, this is a no-op.
     """
     try:
-        from pianoplayer.hand import Hand  # type: ignore[import-untyped]
+        import pianoplayer.hand  # type: ignore[import-untyped]  # noqa: F401
     except ImportError:
         return
 
@@ -32,22 +31,20 @@ def _annotate_track(path: Path, track: Track, hand_side: str) -> None:
     """Run pianoplayer on a single track and update finger numbers."""
     from pianoplayer.hand import Hand  # type: ignore[import-untyped]
 
-    with tempfile.NamedTemporaryFile(suffix=".xml", delete=True) as tmp:
-        # pianoplayer needs a file path
-        hand = Hand(hand_side, str(path))
-        hand.noteseq  # noqa: B018  # triggers parsing
-        hand.generate()
+    hand = Hand(hand_side, str(path))
+    hand.noteseq  # noqa: B018  # triggers parsing
+    hand.generate()
 
-        # Map pianoplayer's finger annotations back to our notes
-        if hasattr(hand, "noteseq") and hand.noteseq:
-            finger_map: dict[tuple[int, float], int] = {}
-            for pn in hand.noteseq:
-                if hasattr(pn, "fingering") and pn.fingering:
-                    pitch = pn.pitch.midi if hasattr(pn.pitch, "midi") else pn.pitch
-                    offset = float(pn.offset) if hasattr(pn, "offset") else 0.0
-                    finger_map[(pitch, round(offset, 3))] = pn.fingering
+    # Map pianoplayer's finger annotations back to our notes
+    if hasattr(hand, "noteseq") and hand.noteseq:
+        finger_map: dict[tuple[int, float], int] = {}
+        for pn in hand.noteseq:
+            if hasattr(pn, "fingering") and pn.fingering:
+                pitch = pn.pitch.midi if hasattr(pn.pitch, "midi") else pn.pitch
+                offset = float(pn.offset) if hasattr(pn, "offset") else 0.0
+                finger_map[(pitch, round(offset, 3))] = pn.fingering
 
-            for note in track.notes:
-                key = (note.pitch, round(note.start_beat, 3))
-                if key in finger_map:
-                    note.finger = finger_map[key]
+        for note in track.notes:
+            key = (note.pitch, round(note.start_beat, 3))
+            if key in finger_map:
+                note.finger = finger_map[key]
