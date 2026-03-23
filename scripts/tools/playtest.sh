@@ -42,7 +42,7 @@ mkdir -p "$CAPTURE_DIR"
 
 # Launch game with debug flags
 cd "$PROJECT_DIR"
-godot --path . -- --telemetry --capture &>/dev/null &
+godot --path . -- --telemetry --capture --song songs/twinkle.json &>/dev/null &
 GODOT_PID=$!
 
 cleanup() {

@@ -141,24 +141,41 @@ func _on_song_selected(song: Dictionary) -> void:
 		return
 
 	# Check if already prepared
-	var json_path: String = "songs/" + song_id + ".json"
-	var global_json: String = ProjectSettings.globalize_path("res://" + json_path)
+	var project_dir: String = ProjectSettings.globalize_path("res://")
+	var json_path: String = project_dir + "songs/" + song_id + ".json"
 
-	if FileAccess.file_exists("res://" + json_path):
-		_start_game_with_file(global_json)
+	if FileAccess.file_exists(json_path):
+		_start_game_with_file(json_path)
 	else:
-		# Prepare the song first
+		# Prepare the song on a background thread
 		_state_label.text = "Preparing song..."
 		_state_label.visible = true
 		_state_label.add_theme_color_override(&"font_color", Color(0.8, 0.8, 0.8, 0.8))
 
-		# Run preparation in a thread to avoid blocking
-		var prepared_path: String = SongSearch.prepare_song(song_id, file_path)
-		if prepared_path != "":
-			_start_game_with_file(prepared_path)
-		else:
-			_state_label.text = "Failed to prepare song"
-			_state_label.add_theme_color_override(&"font_color", Color(0.9, 0.3, 0.3))
+		if _song_list != null:
+			_song_list.visible = false
+
+		var thread := Thread.new()
+		thread.start(_prepare_song_thread.bind(file_path, song_id))
+		set_meta(&"_prepare_thread", thread)
+
+
+func _prepare_song_thread(file_path: String, song_id: String) -> void:
+	var prepared_path: String = SongSearch.prepare_song(file_path, song_id)
+	_on_prepare_complete.call_deferred(prepared_path)
+
+
+func _on_prepare_complete(prepared_path: String) -> void:
+	# Clean up thread
+	var thread: Thread = get_meta(&"_prepare_thread") as Thread
+	if thread:
+		thread.wait_to_finish()
+
+	if prepared_path != "":
+		_start_game_with_file(prepared_path)
+	else:
+		_state_label.text = "Failed to prepare song\nESC for song list"
+		_state_label.add_theme_color_override(&"font_color", Color(0.9, 0.3, 0.3))
 
 
 func _start_game_with_file(path: String) -> void:
