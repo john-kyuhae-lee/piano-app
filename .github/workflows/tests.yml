@@ -38,11 +38,12 @@ jobs:
 
       - name: Install GdUnit4 addon
         run: |
+          mkdir -p addons
           git clone --depth 1 https://github.com/MikeSchulze/gdUnit4.git /tmp/gdunit4
           cp -r /tmp/gdunit4/addons/gdUnit4 addons/gdUnit4
 
       - name: Install Godot
-        uses: chickensoft-games/setup-godot@v3
+        uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.6.1
           use-dotnet: false

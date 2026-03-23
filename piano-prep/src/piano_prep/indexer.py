@@ -11,9 +11,6 @@ import music21
 from rich.console import Console
 from rich.progress import Progress
 
-from .metadata import _build_metadata, _compute_difficulty
-from .models import SongMeta, Track
-from .parser import parse_musicxml
 
 console = Console()
 
