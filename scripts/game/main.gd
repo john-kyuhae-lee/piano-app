@@ -189,9 +189,11 @@ func _start_game_with_file(path: String) -> void:
 	var title: String = song_data.get("meta", {}).get("title", "Unknown") as String
 	print("Loaded song: " + title)
 
-	# Hide song list, show game
+	# Hide song list, release keyboard focus, show game
 	if _song_list != null:
 		_song_list.visible = false
+		# Release focus from the search LineEdit so keys reach the game
+		get_viewport().gui_release_focus()
 
 	_in_game = true
 	_keyboard.visible = true
