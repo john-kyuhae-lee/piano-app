@@ -1,113 +1,105 @@
 class_name SongSearch
 extends RefCounted
 ## Searches the song corpus by calling the Python piano-prep CLI.
-## Returns results as an array of dictionaries.
+## All methods are synchronous (blocking). Callers should run on threads.
+
+static func _get_uv_path() -> String:
+	return OS.get_environment("HOME") + "/.local/bin/uv"
+
+
+static func _get_project_dir() -> String:
+	return ProjectSettings.globalize_path("res://")
+
 
 static func search(query: String, limit: int = 20) -> Array[Dictionary]:
-	"""Search the corpus for songs matching the query."""
-	var project_dir: String = ProjectSettings.globalize_path("res://")
+	"""Search the corpus. BLOCKING — run on a thread."""
+	var project_dir: String = _get_project_dir()
 	var db_path: String = project_dir + "corpus.db"
 	var prep_dir: String = project_dir + "piano-prep"
-
 	var output: Array = []
-	# Use bash -c to suppress Python warnings that pollute stdout
-	var home: String = OS.get_environment("HOME")
-	var uv_path: String = home + "/.local/bin/uv"
+
 	var cmd: String = (
 		"PYTHONWARNINGS=ignore '%s' run --project '%s' piano-prep search-json '%s' --db-path '%s' --limit %d"
-		% [uv_path, prep_dir, query.replace("'", ""), db_path, limit]
+		% [_get_uv_path(), prep_dir, query.replace("'", ""), db_path, limit]
 	)
 
 	var exit_code: int = OS.execute("bash", ["-c", cmd], output, true)
 	if exit_code != 0 or output.is_empty():
-		push_warning("SongSearch: search failed (exit " + str(exit_code) + ")")
 		return []
 
-	# Parse JSON output
-	var json := JSON.new()
-	var err: Error = json.parse(output[0] as String)
-	if err != OK:
-		push_warning("SongSearch: JSON parse error: " + json.get_error_message())
-		return []
-
-	if json.data is Array:
-		var results: Array[Dictionary] = []
-		for item: Variant in json.data as Array:
-			if item is Dictionary:
-				results.append(item as Dictionary)
-		return results
-	return []
+	return _parse_json_array(output[0] as String)
 
 
 static func get_all_songs(limit: int = 100) -> Array[Dictionary]:
-	"""Get all songs sorted by title."""
 	return search("", limit)
 
 
 static func get_recommendations(song_id: String, limit: int = 5) -> Array[Dictionary]:
-	"""Get recommended songs similar to the given song."""
-	var project_dir: String = ProjectSettings.globalize_path("res://")
+	"""Get recommendations. BLOCKING — run on a thread."""
+	var project_dir: String = _get_project_dir()
 	var db_path: String = project_dir + "corpus.db"
 	var prep_dir: String = project_dir + "piano-prep"
 	var output: Array = []
 
-	var home: String = OS.get_environment("HOME")
-	var uv_path: String = home + "/.local/bin/uv"
 	var cmd: String = (
 		"PYTHONWARNINGS=ignore '%s' run --project '%s' piano-prep recommend-json '%s' --db-path '%s' --limit %d"
-		% [uv_path, prep_dir, song_id, db_path, limit]
+		% [_get_uv_path(), prep_dir, song_id, db_path, limit]
 	)
 
 	var exit_code: int = OS.execute("bash", ["-c", cmd], output, true)
 	if exit_code != 0 or output.is_empty():
 		return []
 
-	var json := JSON.new()
-	var err: Error = json.parse(output[0] as String)
-	if err != OK:
-		return []
-
-	if json.data is Array:
-		var results: Array[Dictionary] = []
-		for item: Variant in json.data as Array:
-			if item is Dictionary:
-				results.append(item as Dictionary)
-		return results
-	return []
+	return _parse_json_array(output[0] as String)
 
 
-static func prepare_song(song_id: String, file_path: String) -> String:
-	"""Prepare a song for play (MusicXML → game JSON). Returns output path."""
-	var project_dir: String = ProjectSettings.globalize_path("res://")
+static func prepare_song(file_path: String, output_name: String) -> String:
+	"""Prepare a song. BLOCKING — run on a thread. Returns output path."""
+	var project_dir: String = _get_project_dir()
 	var prep_dir: String = project_dir + "piano-prep"
 	var songs_dir: String = project_dir + "songs"
 	var output: Array = []
 
-	var home: String = OS.get_environment("HOME")
-	var uv_path: String = home + "/.local/bin/uv"
+	# Use the database song ID as the output filename
+	var output_path: String = songs_dir + "/" + output_name + ".json"
+
+	# Prepare with music21 (supports .mxl, .xml, .krn, .mid and more)
 	var cmd: String = (
-		"PYTHONWARNINGS=ignore '%s' run --project '%s' piano-prep prepare '%s' --output-dir '%s' --skip-fingering"
-		% [uv_path, prep_dir, file_path, songs_dir]
+		"PYTHONWARNINGS=ignore '%s' run --project '%s' piano-prep prepare '%s' --output-dir '%s' --skip-fingering 2>&1"
+		% [_get_uv_path(), prep_dir, file_path, songs_dir]
 	)
 
 	var exit_code: int = OS.execute("bash", ["-c", cmd], output, true)
 	if exit_code != 0:
-		push_warning("SongSearch: prepare failed for " + file_path)
-		return ""
+		push_warning("SongSearch: prepare failed (exit %d) for %s" % [exit_code, file_path])
+		# Check if a file was written anyway (sometimes exit code lies)
 
-	# Find the output file
-	var json_path: String = songs_dir + "/" + song_id + ".json"
-	if FileAccess.file_exists(json_path):
-		return json_path
-
-	# Try to find any new .json file
+	# Find the prepared file — look for any new .json matching the recent prepare
 	var dir := DirAccess.open(songs_dir)
 	if dir:
 		dir.list_dir_begin()
 		var fname: String = dir.get_next()
 		while fname != "":
-			if fname.ends_with(".json"):
-				return songs_dir + "/" + fname
+			if fname.ends_with(".json") and fname != "twinkle.json" and fname != "ode_to_joy.json":
+				var full_path: String = songs_dir + "/" + fname
+				# Rename to the expected name
+				if full_path != output_path:
+					DirAccess.rename_absolute(full_path, output_path)
+				return output_path
 			fname = dir.get_next()
 
 	return ""
+
+
+static func _parse_json_array(text: String) -> Array[Dictionary]:
+	var json := JSON.new()
+	var err: Error = json.parse(text)
+	if err != OK:
+		return []
+	if json.data is Array:
+		var results: Array[Dictionary] = []
+		for item: Variant in json.data as Array:
+			if item is Dictionary:
+				results.append(item as Dictionary)
+		return results
+	return []

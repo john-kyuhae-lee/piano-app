@@ -94,16 +94,42 @@ func _build_ui() -> void:
 
 
 func _load_songs() -> void:
-	_songs = SongSearch.get_all_songs(200)
+	_loading_label.text = "Loading songs..."
+	_loading_label.visible = true
+	var thread := Thread.new()
+	thread.start(_load_songs_thread)
+	# Store thread ref to prevent GC
+	set_meta(&"_load_thread", thread)
+
+
+func _load_songs_thread() -> void:
+	var songs: Array[Dictionary] = SongSearch.get_all_songs(200)
+	_display_songs_deferred.call_deferred(songs)
+
+
+func _display_songs_deferred(songs: Array[Dictionary]) -> void:
+	_songs = songs
 	_loading_label.visible = false
 	_display_songs(_songs)
+	# Clean up thread
+	var thread: Thread = get_meta(&"_load_thread") as Thread
+	if thread:
+		thread.wait_to_finish()
 
 
 func _on_search_changed(query: String) -> void:
 	if query.length() < 2 and query.length() > 0:
-		return  # Wait for at least 2 chars
+		return
+	_loading_label.text = "Searching..."
+	_loading_label.visible = true
+	var thread := Thread.new()
+	thread.start(_search_thread.bind(query))
+	set_meta(&"_search_thread", thread)
+
+
+func _search_thread(query: String) -> void:
 	var results: Array[Dictionary] = SongSearch.search(query, 50)
-	_display_songs(results)
+	_display_songs_deferred.call_deferred(results)
 
 
 func _display_songs(songs: Array[Dictionary]) -> void:

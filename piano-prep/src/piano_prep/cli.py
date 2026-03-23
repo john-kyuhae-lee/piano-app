@@ -37,8 +37,10 @@ def prepare(
         raise typer.Exit(1)
 
     ext = input_file.suffix.lower()
-    if ext not in (".mxl", ".xml", ".musicxml"):
-        console.print(f"[red]Unsupported format: {ext} (need .mxl or .xml)[/red]")
+    # music21 supports many formats: MusicXML, Humdrum kern, MIDI, etc.
+    supported = (".mxl", ".xml", ".musicxml", ".krn", ".mid", ".midi", ".rntxt")
+    if ext not in supported:
+        console.print(f"[red]Unsupported format: {ext}[/red]")
         raise typer.Exit(1)
 
     file_size = input_file.stat().st_size
